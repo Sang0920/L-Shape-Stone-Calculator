@@ -7,6 +7,8 @@
   <title>L-Shape Stone Volume Calculator</title>
   <meta name="description"
     content="Calculate the volume of L-shaped natural stone slabs with an interactive visual model and instant results in cubic metres.">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇱</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
@@ -23,20 +25,7 @@
 
   <header>
     <div class="logo">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <rect x="2" y="2" width="20" height="8" rx="2" fill="url(#logoGrad)" />
-        <rect x="16" y="2" width="8" height="22" rx="2" fill="url(#logoGrad2)" />
-        <defs>
-          <linearGradient id="logoGrad" x1="0" y1="0" x2="22" y2="10">
-            <stop stop-color="#6C63FF" />
-            <stop offset="1" stop-color="#48E0E4" />
-          </linearGradient>
-          <linearGradient id="logoGrad2" x1="16" y1="2" x2="24" y2="24">
-            <stop stop-color="#48E0E4" />
-            <stop offset="1" stop-color="#6C63FF" />
-          </linearGradient>
-        </defs>
-      </svg>
+      <span class="logo-emoji">🇱</span>
       <span>StoneCalc</span>
     </div>
     <p class="subtitle">L-Shape Natural Stone Volume Calculator</p>
@@ -53,7 +42,7 @@
           <span class="label-text">Length (L)</span>
           <span class="label-unit">mm</span>
         </label>
-        <input type="number" id="length" value="600" min="1" step="1">
+        <input type="number" id="length" value="1000" min="1" step="1">
       </div>
 
       <div class="input-group">
@@ -61,7 +50,7 @@
           <span class="label-text">Total Width (W)</span>
           <span class="label-unit">mm</span>
         </label>
-        <input type="number" id="width" value="300" min="1" step="1">
+        <input type="number" id="width" value="750" min="1" step="1">
       </div>
 
       <div class="input-group">
@@ -69,7 +58,7 @@
           <span class="label-text">Flat Thickness (T)</span>
           <span class="label-unit">mm</span>
         </label>
-        <input type="number" id="flatThickness" value="20" min="1" step="1">
+        <input type="number" id="flatThickness" value="100" min="1" step="1">
       </div>
 
       <div class="input-group">
@@ -77,7 +66,7 @@
           <span class="label-text">Lip Width (Lw)</span>
           <span class="label-unit">mm</span>
         </label>
-        <input type="number" id="lipWidth" value="50" min="1" step="1">
+        <input type="number" id="lipWidth" value="100" min="1" step="1">
       </div>
 
       <div class="input-group">
@@ -85,16 +74,36 @@
           <span class="label-text">Lip Drop Height (Lh)</span>
           <span class="label-unit">mm</span>
         </label>
-        <input type="number" id="lipHeight" value="30" min="1" step="1">
+        <input type="number" id="lipHeight" value="100" min="1" step="1">
+      </div>
+
+      <div class="input-group">
+        <label>
+          <span class="label-text">Edge Type</span>
+        </label>
+        <div class="edge-toggle">
+          <label class="edge-option">
+            <input type="radio" name="edgeType" value="chamfer" id="edgeChamfer" checked>
+            <span>45° Chamfer</span>
+          </label>
+          <label class="edge-option">
+            <input type="radio" name="edgeType" value="bullnose" id="edgeBullnose">
+            <span>Bullnose</span>
+          </label>
+        </div>
       </div>
 
       <div class="input-group">
         <label for="chamfer">
-          <span class="label-text">Chamfer / Bevel (C)</span>
+          <span class="label-text" id="chamferLabel">Chamfer Depth (T<sub>r</sub>)</span>
           <span class="label-unit">mm</span>
         </label>
-        <input type="number" id="chamfer" value="3" min="0" step="0.5">
-        <span class="input-hint">45° chamfer on top edge (0 = no chamfer)</span>
+        <input type="number" id="chamfer" value="50" min="0" step="1">
+        <span class="input-hint" id="chamferHint">45° chamfer leg length on top edge (0 = no edge). Must be less than
+          T.</span>
+        <button class="auto-fit-btn" id="autoFitBtn" style="display:none" type="button">
+          ⊕ Auto-fit radius (pass through inner corner)
+        </button>
       </div>
 
       <div class="input-group">
@@ -104,6 +113,9 @@
         </label>
         <input type="number" id="quantity" value="1" min="1" step="1">
       </div>
+
+      <!-- Validation message -->
+      <div class="validation-msg" id="validationMsg"></div>
 
       <!-- Results card -->
       <div class="results-card" id="resultsCard">
@@ -124,7 +136,7 @@
       <p class="panel-desc">Interactive diagram updates with your parameters.</p>
 
       <div class="diagram-container" id="diagramContainer">
-        <svg id="shapeSvg" viewBox="0 0 500 400" preserveAspectRatio="xMidYMid meet">
+        <svg id="shapeSvg" viewBox="0 0 700 500" preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="stoneGrad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="#7a8a9a" />
@@ -160,12 +172,12 @@
       <!-- Formula card -->
       <div class="formula-card">
         <h3>Formula</h3>
-        <p class="formula-text">
-          V = L × [ W × T + Lw × Lh ] − Chamfer
+        <p class="formula-text" id="formulaText">
+          V = L × [ W × T + Lw × Lh ] − ½ × T<sub>r</sub>² × L
         </p>
-        <p class="formula-desc">
+        <p class="formula-desc" id="formulaDesc">
           The L-shape is decomposed into a flat slab (W × T) plus a vertical lip (Lw × Lh), extruded along L. A 45°
-          chamfer on the top edge removes ½ × C² × L per chamfered edge.
+          chamfer removes a right-isosceles triangular prism with legs = T<sub>r</sub>.
         </p>
       </div>
     </section>
